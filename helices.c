@@ -16,14 +16,14 @@
 void initialize_helix_partition(plain_sequence * rna){
 	
 	int 		i, j, k, delta;
-	
+	printf("%d \n ", rna->size+2);
 	HELIX_PART_FCI = (TYPE****)malloc((rna->size+2)*sizeof(TYPE***));
 	for(i = 0; i <= rna->size; i++){
 		HELIX_PART_FCI[i] = (TYPE***)malloc((rna->size+2)*sizeof(TYPE**));
 		for(j = 0; j <= rna->size; j++){
 			HELIX_PART_FCI[i][j] = (TYPE**)malloc((rna->size+2)*sizeof(TYPE*));
 			for(k = 0; k <= rna->size; k++){
-				HELIX_PART_FCI[i][j][k] = (TYPE*)malloc((rna->size+2)*sizeof(TYPE));
+				HELIX_PART_FCI[i][j][k] = (TYPE*)malloc((2*MAX_SKEW+1)*sizeof(TYPE));
 				for(delta = 0; delta<=2*MAX_SKEW; delta++){
 					HELIX_PART_FCI[i][j][k][delta] = 0.;
 				}	
@@ -75,7 +75,7 @@ void compute_helix_partition(plain_sequence * rna){
 				}	
 			}
 		}
-	}		
+	}	
 }
 
 

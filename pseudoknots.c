@@ -91,6 +91,7 @@ void exp_E_pseudoknot (	vrna_fold_compound_t *fcom,
 									/* all limits have been found, now include motifs for all
 									 * three intermediate sectors (which can be unpaired) */
 									
+									//printf("maximum beforu %f, \n", qtemp);
 									
 									if(i_prime - k - 1 > 0){
 										/* either there is some motif or only unpaired bases */
@@ -108,6 +109,7 @@ void exp_E_pseudoknot (	vrna_fold_compound_t *fcom,
 
 									}	
 									
+									//printf("maximum %f, \n", qtemp);
 									/* scale values the segments 'consumed' by helices */
 									h11 = k - i + 1;
 									h12 = k2 - i_prime + 1;
@@ -120,7 +122,7 @@ void exp_E_pseudoknot (	vrna_fold_compound_t *fcom,
 								 	
 								 	/* sum up to other possibilities */
 								 	qpk1 += qtemp;
-								 	qpk1 *= PK_ENERGY;
+								 	qpk1 *= exp(-PK_ENERGY/RT); /* penalty of H-type pseudoknot */
 								}
 							} 	
 						}

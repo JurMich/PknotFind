@@ -255,7 +255,6 @@ fill_arrays_pk(vrna_fold_compound_t *fc)
       hc_decompose  = hard_constraints[jindx[j] + i];
       qbt1          = 0;
       
-      
       //exp_E_pseudoknot(fc, i ,j);
       exp_E_pseudoknot(fc, i ,j);
       //printf("qpk1 <-> %f (%d,%d) (%d,%d)\n", qpk[my_iindx[1] - n], 1, n, i, j);
@@ -304,7 +303,7 @@ fill_arrays_pk(vrna_fold_compound_t *fc)
         temp += fc->aux_grammar->cb_aux_exp_f(fc, i, j, fc->aux_grammar->data);
    
 
-      q[ij] = temp;		
+      q[ij] = temp;	
 
       if (temp > Qmax) {
         Qmax = temp;

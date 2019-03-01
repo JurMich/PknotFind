@@ -16,7 +16,7 @@ int N_SAMPLES;
 
 void read_parameters(int argc, char **argv){
 	char char_read;
-	while((char_read = getopt(argc, argv, "i:j:p:")) != EOF){
+	while((char_read = getopt(argc, argv, "i:j:p:k:")) != EOF){
 		switch(char_read){
 			case 'i' : /* input sequence in Fasta format*/
 				nameFileInFasta=(char*) malloc ((strlen(optarg)+1) * sizeof(char));
@@ -36,6 +36,13 @@ void read_parameters(int argc, char **argv){
 					exit(EXIT_SUCCESS);
 				}
 				break;
+			case 'k' :
+				PK_ENERGY=atoi(optarg);
+				if (PK_ENERGY<0){
+					printf("\nBad parameter value (-p): This value should be positive.\n\n");  
+					exit(EXIT_SUCCESS);
+				}
+				break;
 		}		
 	}	
 }
@@ -51,7 +58,7 @@ int main(int argc, char **argv){
 	TEMPSCALE = 1;
 	RT = TEMPSCALE*0.0019872370936902486 * (273.15 + TEMP) * 100;
 	MAX_SKEW = 2;
-	PK_ENERGY = 1.;
+	PK_ENERGY = 900.;
 	N_SAMPLES = 100;
 	
 	read_parameters(argc, argv);
@@ -88,7 +95,7 @@ int main(int argc, char **argv){
 		printf("%s \n", pstruc2);
 	}
 	
-	printf("Total partition function: q = %f \n", all[E_fold_cp->iindx[1] - rna_seq->size]);
+	printf("Total partition function: q = %f \n", all[E_fold_cp->iindx[1] - rna_seq->size]*pow(E_fold_cp->exp_params->pf_scale, rna_seq->size));
 	
 }
 

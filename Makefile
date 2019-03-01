@@ -1,7 +1,7 @@
 CC = gcc
 #CFLAGS = -O3 -Wall
 #-ansi removed from nextt line
-override CFLAGS +=  -IViennaRNA -std=gnu99 -Wall -pedantic -pg -ggdb -g -O3 -fstack-protector-all 
+override CFLAGS +=  -IViennaRNA -std=gnu99 -Wall -pedantic -ggdb -g -O3 -fstack-protector-all 
 LIBS =   -lRNA -lm -lmpfr -lgmp -fopenmp 
 
 PKnotFind: main.o  rna.o energies.o helices.o pseudoknots.o external_pf_pk.o multibranch_pf_pk.o part_func_pk.o boltzmann_sampling_pk.o
