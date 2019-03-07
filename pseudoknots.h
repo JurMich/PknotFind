@@ -8,6 +8,7 @@
 /* this matrix */
 FLT_OR_DBL * qpk; /* matrix containing the values for pseudoknots */
 FLT_OR_DBL PK_ENERGY; /* penalty for creating a pseudoknot */
+int MIN_PK; /* minimum pseudoknot size */
 
 
 /**

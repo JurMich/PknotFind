@@ -289,10 +289,8 @@ vrna_exp_E_ext_fast_pk(vrna_fold_compound_t        *fc,
         j);
       return 0.;
     }
-
-    return exp_E_ext_fast(fc, i, j, aux_mx);
+    return exp_E_ext_fast(fc, i, j, aux_mx);	
   }
-
   return 0.;
 }
 
@@ -641,17 +639,19 @@ exp_E_ext_fast(vrna_fold_compound_t       *fc,
       qbt1  += G[ij];
     }
   }
-  	
-  if ((fc->aux_grammar))
-	qbt1 += exp_E_pseudoknot_new(fc, i, j);		
+  if ((fc->aux_grammar)){
+	qbt1 += exp_E_pseudoknot_new(fc, i, j);	
+  }	
 
   qq[i] = qbt1;
 
   if (with_ud)
     qqu[0][i] = qbt1;
+     
 
   /* the entire stretch [i,j] is unpaired */
   qbt1 += reduce_ext_up_fast(fc, i, j, aux_mx, evaluate, &hc_dat_local, &sc_wrapper);
+
 
   qbt1 += split_ext_fast(fc, i, j, aux_mx, evaluate, &hc_dat_local, &sc_wrapper);
 

@@ -73,7 +73,7 @@ vrna_exp_E_ml_fast_qqm1_pk(struct vrna_mx_pf_aux_ml_s *aux_mx);
 
 
 FLT_OR_DBL
-vrna_exp_E_ml_fast(vrna_fold_compound_t *fc,
+vrna_exp_E_ml_fast_pk(vrna_fold_compound_t *fc,
                    int                  i,
                    int                  j,
                    vrna_mx_pf_aux_ml_t  aux_mx);

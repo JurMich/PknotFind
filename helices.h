@@ -7,37 +7,29 @@
 int MAX_SKEW;
 int MAX_ALPHA;
 int MAX_BETA;
-
-/* Four-dimensional table containing value Z for helices at i,j,k, delta 
- * */
-TYPE **** HELIX_PART_FCI;
+int MAX_LIST; /* maximum length of a list */
 
 void compute_helix_partition(plain_sequence * rna);
 
+/* nodes of the helix list */
 
-/* Table containing poset for every helix */
+typedef struct helices_list helices_list;
+typedef struct helix helix;
 
-typedef struct poset_node poset_node;
-typedef struct poset_children poset_children;
+/* table of linked lists of all helices */
+helices_list *** HELIX_PART_FCI;
 
+struct helices_list{
+					int count;
+					TYPE total_pf;
+					helix *first_hx;
+};
 
-/* nodes of a poset */
-struct poset_node{
-					int k;
-					int l;
-					int status;  /* points out whether we already visited the node */
-					poset_children * children;
-					poset_children * last_child;
-				};
-
-
-/* wrapper that links nodes with children  */
-struct poset_children{
-					poset_children * next_child;
-					poset_node * child;
-				};
-
-poset_node *** POSET_TAB;
-
-
+struct helix{
+			int k;
+			int l;
+			TYPE helix_pf;
+			TYPE goodness; /* estimates quality of the helix */
+			helix *next_hx; /* next helix in linked list */
+};
 #endif

@@ -31,10 +31,10 @@
 #include "ViennaRNA/constraints/hard.h"
 #include "ViennaRNA/constraints/soft.h"
 #include "ViennaRNA/mfe.h"
-#include "part_func_pk.h"
-#include "pseudoknots.h"
 #include "external_pf_pk.h"
 #include "multibranch_pf_pk.h"
+#include "part_func_pk.h"
+#include "pseudoknots.h"
 
 #ifdef _OPENMP
 #include <omp.h>
@@ -57,8 +57,47 @@
  # PRIVATE FUNCTION DECLARATIONS #
  #################################
  */
+ 
 PRIVATE int
 fill_arrays_pk(vrna_fold_compound_t *fc);
+
+/*
+ #################################
+ # OTHER DECLARATIONS            #
+ #################################
+ */
+
+const FLT_OR_DBL *
+vrna_exp_E_ml_fast_qqm_pk(struct vrna_mx_pf_aux_ml_s *aux_mx);
+
+FLT_OR_DBL
+vrna_exp_E_ext_fast_pk(vrna_fold_compound_t        *fc,
+                    int                         i,
+                    int                         j,
+                    struct vrna_mx_pf_aux_el_s  *aux_mx);
+
+FLT_OR_DBL
+vrna_exp_E_ml_fast_pk(vrna_fold_compound_t *fc,
+                   int                  i,
+                   int                  j,
+                   vrna_mx_pf_aux_ml_t  aux_mx);
+                   
+void
+vrna_exp_E_ml_fast_rotate_pk(vrna_mx_pf_aux_ml_t aux_mx);
+
+
+void
+vrna_exp_E_ml_fast_free_pk(vrna_mx_pf_aux_ml_t aux_mx);
+
+
+void
+vrna_exp_E_ext_fast_rotate_pk(struct vrna_mx_pf_aux_el_s *aux_mx);
+
+
+void
+vrna_exp_E_ext_fast_free_pk(struct vrna_mx_pf_aux_el_s *aux_mx);
+
+
 
 /*
  #################################
@@ -189,7 +228,7 @@ fill_arrays_pk(vrna_fold_compound_t *fc)
   unsigned char       *hard_constraints;
   int                 n, i, j, k, ij, d, *my_iindx, *jindx, with_gquad, turn,
                       with_ud, hc_decompose, *pscore;
-  FLT_OR_DBL          temp, Qmax, qbt1, *q, *qb, *qm, *qm1, *q1k, *qln, *scale;
+  FLT_OR_DBL          temp, temp2, Qmax, qbt1, *q, *qb, *qm, *qm1, *q1k, *qln, *scale;
   double              kTn, max_real;
   vrna_ud_t           *domains_up;
   vrna_md_t           *md;
@@ -277,7 +316,7 @@ fill_arrays_pk(vrna_fold_compound_t *fc)
       qb[ij] = qbt1;
 
       /* Multibranch loop */
-      temp = vrna_exp_E_ml_fast(fc, i, j, aux_mx_ml);
+      temp = vrna_exp_E_ml_fast_pk(fc, i, j, aux_mx_ml);
 
       /* apply auxiliary grammar rule for multibranch loop case */
       if ((fc->aux_grammar) && (fc->aux_grammar->cb_aux_exp_m))
@@ -286,7 +325,7 @@ fill_arrays_pk(vrna_fold_compound_t *fc)
       qm[ij] = temp;
 
       if (qm1) {
-        temp = vrna_exp_E_ml_fast_qqm(aux_mx_ml)[i]; /* for stochastic backtracking and circfold */
+        temp = vrna_exp_E_ml_fast_qqm_pk(aux_mx_ml)[i]; /* for stochastic backtracking and circfold */
 
         /* apply auxiliary grammar rule for multibranch loop (M1) case */
         if ((fc->aux_grammar) && (fc->aux_grammar->cb_aux_exp_m1))
@@ -296,12 +335,12 @@ fill_arrays_pk(vrna_fold_compound_t *fc)
       }
 
       /* Exterior loop */
-      temp = vrna_exp_E_ext_fast(fc, i, j, aux_mx_el);
-
+      temp = vrna_exp_E_ext_fast_pk(fc, i, j, aux_mx_el);
+      
       /* apply auxiliary grammar rule for exterior loop case */
-      if ((fc->aux_grammar) && (fc->aux_grammar->cb_aux_exp_f))
+      if ((fc->aux_grammar) && (fc->aux_grammar->cb_aux_exp_f)){
         temp += fc->aux_grammar->cb_aux_exp_f(fc, i, j, fc->aux_grammar->data);
-   
+	}
 
       q[ij] = temp;	
 
@@ -315,16 +354,16 @@ fill_arrays_pk(vrna_fold_compound_t *fc)
         vrna_message_warning("overflow while computing partition function for segment q[%d,%d]\n"
                              "use larger pf_scale", i, j);
 
-        vrna_exp_E_ml_fast_free(aux_mx_ml);
-        vrna_exp_E_ext_fast_free(aux_mx_el);
+        vrna_exp_E_ml_fast_free_pk(aux_mx_ml);
+        vrna_exp_E_ext_fast_free_pk(aux_mx_el);
 
         return 0; /* failure */
       }
     }
 
     /* rotate auxiliary arrays */
-    vrna_exp_E_ext_fast_rotate(aux_mx_el);
-    vrna_exp_E_ml_fast_rotate(aux_mx_ml);
+    vrna_exp_E_ext_fast_rotate_pk(aux_mx_el);
+    vrna_exp_E_ml_fast_rotate_pk(aux_mx_ml);
   }
 
   /* prefill linear qln, q1k arrays */
