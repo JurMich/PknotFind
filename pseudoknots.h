@@ -161,6 +161,7 @@ void init_aux_grammar(	plain_sequence * rna,
 void traceback_pks(	int	i,
 				int j,
 				char* pstruc,
-				vrna_fold_compound_t  *fcom);
+				vrna_fold_compound_t  *fcom,
+				double *pk_energy);
 
 #endif

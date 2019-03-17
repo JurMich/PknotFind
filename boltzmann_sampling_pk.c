@@ -37,6 +37,7 @@
  # GLOBAL VARIABLES              #
  #################################
  */
+ 
 
 /*
  #################################
@@ -57,25 +58,30 @@ PRIVATE char *info_set_uniq_ml =
 PRIVATE void  backtrack(int                   i,
                         int                   j,
                         char                  *pstruc,
-                        vrna_fold_compound_t  *vc);
+                        vrna_fold_compound_t  *vc,
+                        double			  *pk_energy);
 
 
 void  backtrack_qm(int                  i,
                            int                  j,
                            char                 *pstruc,
-                           vrna_fold_compound_t *vc);
+                           vrna_fold_compound_t *vc,
+                           double			  *pk_energy
+                           );
 
 
 PRIVATE void  backtrack_qm1(int                   i,
                             int                   j,
                             char                  *pstruc,
-                            vrna_fold_compound_t  *vc);
+                            vrna_fold_compound_t  *vc,
+                            double			  *pk_energy);
 
 
 PRIVATE void  backtrack_qm2(int                   u,
                             int                   n,
                             char                  *pstruc,
-                            vrna_fold_compound_t  *vc);
+                            vrna_fold_compound_t  *vc,
+                            double			  *pk_energy);
 
 
 /*
@@ -90,7 +96,7 @@ PRIVATE void  backtrack_qm2(int                   u,
  * p(S) = exp(-E(S)/kT)/Z
  */
 PUBLIC char *
-vrna_pbacktrack(vrna_fold_compound_t *vc)
+vrna_pbacktrack_pk(vrna_fold_compound_t *vc)
 {
   char    *structure  = NULL;
   double  prob        = 1.;
@@ -123,8 +129,9 @@ vrna_pbacktrack(vrna_fold_compound_t *vc)
 
 
 PUBLIC char *
-vrna_pbacktrack5(vrna_fold_compound_t *vc,
-                 int                  length)
+vrna_pbacktrack5_pk(vrna_fold_compound_t *vc,
+                 int                  length,
+                 double				  *pk_energy)
 {
   FLT_OR_DBL        r, qt, q_temp, qkl, qpkl;
   int               i, j, ij, n, k, u, type, start, paired;
@@ -217,6 +224,7 @@ vrna_pbacktrack5(vrna_fold_compound_t *vc,
 
         if (r > q_temp)
           break;                /* j is paired */
+        *pk_energy *= q_temp/q[my_iindx[1] - j + 1];
       }
     }
     if (j <= md->min_loop_size + 1)
@@ -252,6 +260,10 @@ vrna_pbacktrack5(vrna_fold_compound_t *vc,
 
         qt += qkl;
         if (qt > r){
+		  *pk_energy *= qkl/qb[ij];
+		  if (i > 1) {
+			*pk_energy /= q1k[i - 1];
+		  }
           paired = 1;
           break;           /* j is paired */
 		}
@@ -270,9 +282,9 @@ vrna_pbacktrack5(vrna_fold_compound_t *vc,
       vrna_message_error("backtracking failed in ext loop");
 
 	if(paired){ /* basic pair */
-		backtrack(i, j, pstruc, vc);
+		backtrack(i, j, pstruc, vc, pk_energy);
 	}else{ /* pseudoknot */
-		traceback_pks(i, j, pstruc, vc);
+		traceback_pks(i, j, pstruc, vc, pk_energy);
 	}
     j = i - 1;
   }
@@ -295,11 +307,14 @@ vrna_pbacktrack5(vrna_fold_compound_t *vc,
 
         if (r > q_temp)
           break;                /* i is paired */
+        *pk_energy *= q_temp/qln[i + 1];
       }
     }
-    if (i >= length)
+    if (i >= length){
+	  *pk_energy *= scale[1];
       break;              /* no more pairs */
-
+	}
+	
     /* now find the pairing partner j */
     r = vrna_urn() * (qln[i] - q_temp);
     for (qt = 0, j = i + 1; j <= length; j++) {
@@ -325,6 +340,10 @@ vrna_pbacktrack5(vrna_fold_compound_t *vc,
 
         qt += qkl;
         if (qt > r){
+		  *pk_energy *= qkl/qb[ij];
+		  if (j < length) {
+			*pk_energy /= qln[j + 1];
+		  }
 		  paired = 1;	
           break;           /* j is paired */
 		}			
@@ -343,10 +362,13 @@ vrna_pbacktrack5(vrna_fold_compound_t *vc,
 
     start = j + 1;
     if(paired){
-		backtrack(i, j, pstruc, vc);
+		backtrack(i, j, pstruc, vc, pk_energy);
 		paired = 0;		  /* must reset  the value after the backtrak is performed */
 	}else{ /* pseudoknot */
-		traceback_pks(i, j, pstruc, vc);
+		traceback_pks(i, j, pstruc, vc, pk_energy);
+	}
+	if(start == length){
+		*pk_energy *= scale[1];
 	}
   }
 #endif
@@ -358,8 +380,10 @@ vrna_pbacktrack5(vrna_fold_compound_t *vc,
 void backtrack_qm(int                  i,
              int                  j,
              char                 *pstruc,
-             vrna_fold_compound_t *vc)
+             vrna_fold_compound_t *vc,
+             double			  *pk_energy)
 {
+	
   /* divide multiloop into qm and qm1  */
   FLT_OR_DBL    qmt, r, q_temp;
   int           k, u, cnt, span, turn;
@@ -439,10 +463,12 @@ void backtrack_qm(int                  i,
       vrna_message_error("backtrack failed in qm");
 
 	
-	backtrack_qm1(k, j, pstruc, vc);
+	backtrack_qm1(k, j, pstruc, vc, pk_energy);
 
-    if (k < i + turn)
+    if (k < i + turn){
+	  *pk_energy *= expMLbase[k-i];
       break;            /* no more pairs */
+	}
 
     u = k - i;
     /* check whether we make the decision to leave [i..k-1] unpaired */
@@ -458,8 +484,11 @@ void backtrack_qm(int                  i,
       }
 
       r = vrna_urn() * (qm[my_iindx[i] - (k - 1)] + q_temp);
-      if (q_temp >= r)
+      if (q_temp >= r){
+		*pk_energy *= q_temp;  
 		break;
+		
+	  }
     }
 
     j = k - 1;
@@ -471,7 +500,8 @@ PRIVATE void
 backtrack_qm1(int                   i,
               int                   j,
               char                  *pstruc,
-              vrna_fold_compound_t  *vc)
+              vrna_fold_compound_t  *vc,
+              double			  *pk_energy)
 {
   /* i is paired to l, i<l<j; backtrack in qm1 to find l */
   int               ii, l, il, type, turn, paired;
@@ -510,7 +540,6 @@ backtrack_qm1(int                   i,
 
   r   = vrna_urn() * qm1[jindx[j] + i];
   
-  //printf("(%d, %d) R: %f max:%f\n", i,j,r, qm1[jindx[j] + i]);
   ii  = my_iindx[i];
   for (qt = 0., l = j; l > i + turn; l--) {
     il = jindx[l] + i;
@@ -532,7 +561,8 @@ backtrack_qm1(int                   i,
 		
         qt += q_temp;
         if (qt >= r){
-		  paired = 1;	
+		  paired = 1;
+		  *pk_energy *= q_temp/qb[ii - l];
           break;
         
 		}			
@@ -544,6 +574,7 @@ backtrack_qm1(int                   i,
     
     qt += qpk[my_iindx[i] - l] * expMLbase[j - l];
 	if (qt >= r){
+	  *pk_energy *= expMLbase[j - l];
       break;
 	}
   }
@@ -551,9 +582,9 @@ backtrack_qm1(int                   i,
     vrna_message_error("backtrack failed in qm1");
 
   if(paired){	
-	backtrack(i, l, pstruc, vc);
+	backtrack(i, l, pstruc, vc, pk_energy);
   }else{
-	traceback_pks(i, l, pstruc, vc);  
+	traceback_pks(i, l, pstruc, vc, pk_energy);  
   }	  
 }
 
@@ -562,7 +593,8 @@ PRIVATE void
 backtrack_qm2(int                   k,
               int                   n,
               char                  *pstruc,
-              vrna_fold_compound_t  *vc)
+              vrna_fold_compound_t  *vc,
+              double			  *pk_energy)
 {
   FLT_OR_DBL  qom2t, r;
   int         u, turn;
@@ -598,8 +630,8 @@ backtrack_qm2(int                   k,
   if (u == n - turn)
     vrna_message_error("backtrack failed in qm2");
 
-  backtrack_qm1(k, u, pstruc, vc);
-  backtrack_qm1(u + 1, n, pstruc, vc);
+  backtrack_qm1(k, u, pstruc, vc, pk_energy);
+  backtrack_qm1(u + 1, n, pstruc, vc, pk_energy);
 }
 
 
@@ -607,7 +639,8 @@ PRIVATE void
 backtrack(int                   i,
           int                   j,
           char                  *pstruc,
-          vrna_fold_compound_t  *vc)
+          vrna_fold_compound_t  *vc,
+          double			  *pk_energy)
 {
   char              *ptype, *sequence;
   unsigned char     *hard_constraints, hc_decompose;
@@ -663,8 +696,10 @@ backtrack(int                   i,
     
     //printf("hairpino %f (%d,%d)\n", qbt1, i,j);
 
-    if (qbt1 >= r)
+    if (qbt1 >= r){
+	  *pk_energy *= qbt1;
       return;            /* found the hairpin we're done */
+	}
 
     if (hc_decompose & VRNA_CONSTRAINT_CONTEXT_INT_LOOP) {
       /* interior loop contributions */
@@ -718,12 +753,14 @@ backtrack(int                   i,
 
             qbt1 += q_temp;
             if (qbt1 >= r){
+			  *pk_energy *= q_temp/qb[kl];
               break;
             }      
           }
           qbt1 += expMLbase[k - i - 1] * expMLbase[j - l - 1] * qpk[kl];
           if (qbt1 >= r){ /* found a pseudoknot, we're done (after we check it out) */
-			traceback_pks(k, l, pstruc, vc);
+			*pk_energy *= expMLbase[k - i - 1] * expMLbase[j - l - 1];
+			traceback_pks(k, l, pstruc, vc, pk_energy);
             return;      
               
           }
@@ -776,8 +813,10 @@ backtrack(int                   i,
         qt    += q_temp;
         qbt1  += q_temp;
 
-        if (qt >= r)
+        if (qt >= r){
+		  *pk_energy *= closingPair * sc->exp_f(i, j, k - 1, k, VRNA_DECOMP_ML_ML_ML, sc->data);
           break;
+	    }
       }
     } else {
       for (qt = qbt1, k = i + 1; k < j; k++) {
@@ -788,16 +827,18 @@ backtrack(int                   i,
         qt    += q_temp;
         qbt1  += q_temp;
 
-        if (qt >= r)
+        if (qt >= r){
+		  *pk_energy *= closingPair;
           break;
+        }
       }
     }
     if (k >= j)
       vrna_message_error("backtrack failed, can't find split index ");
 
-    backtrack_qm1(k, j, pstruc, vc);
+    backtrack_qm1(k, j, pstruc, vc, pk_energy);
 
     j = k - 1;
-    backtrack_qm(i, j, pstruc, vc);
+    backtrack_qm(i, j, pstruc, vc, pk_energy);
   }
 }

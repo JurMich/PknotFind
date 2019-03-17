@@ -83,7 +83,7 @@ int main(int argc, char **argv){
 	rna_seq= (plain_sequence *) get_plain_sequence(nameFileInFasta, RNAname);
 	set_E_fold_model(rna_seq);
 	
-	printf("%d\n",MAX_LIST);
+	//printf("%d\n",MAX_LIST);
 	compute_helix_partition(rna_seq);
 	int i,j,k, delta, d;
 	
@@ -123,12 +123,14 @@ int main(int argc, char **argv){
 	pstruc[rna_seq->size+1] = '\0';
 	
 	char * pstruc2;
+	double pk_energy;
 
 	display_plain_sequence(rna_seq, NULL);
 
 	for(int a = 1; a <=N_SAMPLES; a++){
-		pstruc2 = vrna_pbacktrack5(E_fold_cp, rna_seq->size);
-		printf("%s \n", pstruc2);
+		pk_energy = 1.;
+		pstruc2 = vrna_pbacktrack5_pk(E_fold_cp, rna_seq->size, &pk_energy);
+		printf("%s (%.2f) \n", pstruc2, -RT*log(pk_energy*pow(E_fold_cp->exp_params->pf_scale, rna_seq->size))/100);
 	}
 	
 	printf("Total partition function: q = %f \n", all[E_fold_cp->iindx[1] - rna_seq->size]*pow(E_fold_cp->exp_params->pf_scale, rna_seq->size));

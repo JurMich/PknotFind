@@ -31,8 +31,9 @@
  *  @param  length  The length of the subsequence to consider (starting with 5' end)
  *  @return         A sampled secondary structure in dot-bracket notation (or NULL on error)
  */
-char *vrna_pbacktrack5(vrna_fold_compound_t *vc,
-                       int                  length);
+char *vrna_pbacktrack5_pk(vrna_fold_compound_t *vc,
+                       int                  length,
+                       double				*pk_energy);
 
 
 /**
@@ -52,9 +53,9 @@ char *vrna_pbacktrack5(vrna_fold_compound_t *vc,
  *  @param  vc      The fold compound data structure
  *  @return         A sampled secondary structure in dot-bracket notation (or NULL on error)
  */
-char *vrna_pbacktrack(vrna_fold_compound_t *vc);
+char *vrna_pbacktrack_pk(vrna_fold_compound_t *vc);
 
-void backtrack_qm(int i, int j, char * pstruc, vrna_fold_compound_t *vc);
+void backtrack_qm(int i, int j, char * pstruc, vrna_fold_compound_t *vc, double *pk_energy);
 /**@}*/
 
 

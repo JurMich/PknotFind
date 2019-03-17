@@ -312,7 +312,8 @@ void traceback_helix(	int 	i,
 						int 	j, 
 						helix* 	hx,
 						char*	pstruc, 
-						int 	type_closure
+						int 	type_closure,
+						double 	*pk_energy
 					){
 											
 	FLT_OR_DBL		r, qpk1, qtemp;
@@ -338,7 +339,10 @@ void traceback_helix(	int 	i,
 							i_prime = i+1;
 							j_prime = j-1;
 							if(qpk1 > r){
-								traceback_helix(i_prime, j_prime, curr_helix, pstruc, type_closure);
+								printf("IL: %f\n", *pk_energy);
+								*pk_energy *= energy_to_bfactor(stacking_energy(i,j));
+								printf("stack: %f -> %f \n", *pk_energy, energy_to_bfactor(stacking_energy(i,j)));
+								traceback_helix(i_prime, j_prime, curr_helix, pstruc, type_closure, pk_energy);
 								return;	
 							}
 							
@@ -354,7 +358,10 @@ void traceback_helix(	int 	i,
 							i_prime = i+alpha+1;
 							j_prime = j-beta-1;
 							if(qpk1 > r){
-								traceback_helix(i_prime, j_prime, curr_helix, pstruc, type_closure);	
+								printf("IL: %f\n", *pk_energy);
+								*pk_energy *= energy_to_bfactor(internal_loop_energy(i, i+alpha+1,j-beta-1,j));
+								printf("IL: %f -> %f \n", *pk_energy, energy_to_bfactor(internal_loop_energy(i, i+alpha+1,j-beta-1,j)));
+								traceback_helix(i_prime, j_prime, curr_helix, pstruc, type_closure, pk_energy);	
 								return;
 							}
 						}
@@ -371,7 +378,8 @@ void traceback_helix(	int 	i,
 void traceback_interspace(	int 		i,
 							int 		j,
 							char* 		pstruc,
-							vrna_fold_compound_t  *fcom	
+							vrna_fold_compound_t  *fcom,
+							double 		*pk_energy	
 						){
 	
 	vrna_mx_pf_t 	* matrices;
@@ -394,8 +402,10 @@ void traceback_interspace(	int 		i,
 	
 	r = (((double)rand()) / ((double)RAND_MAX)) * (q_m[my_iindx[i+1] - (j-1)] + expMLbase[j - i - 1]);
 	if(r > expMLbase[j - i - 1]){  /* do not leave the space empty */
-		backtrack_qm(i + 1 , j - 1, pstruc, fcom);	
+		backtrack_qm(i + 1 , j - 1, pstruc, fcom, pk_energy);	
 		//printf("backtracked \n");
+	}else{
+		*pk_energy *= expMLbase[j - i - 1];	
 	}						
 }
 						
@@ -404,7 +414,8 @@ void traceback_interspace(	int 		i,
 void traceback_pks(	int	i,
 					int j,
 					char* pstruc,
-					vrna_fold_compound_t  *fcom
+					vrna_fold_compound_t  *fcom,
+					double 				*pk_energy
 					){
 	
 	int 		i_prime, j_prime;
@@ -477,6 +488,9 @@ void traceback_pks(	int	i,
 							/* sum up to other possibilities */
 							qpk1 += qtemp;
 							if(qpk1 >= r){
+								printf("pkfound %f \n", *pk_energy);
+								*pk_energy *= exp(-PK_ENERGY/RT) * scale[h11 + h12 + h21 + h22];
+								printf("pkfound -> cont %.9f %.09f %f %d %f\n", *pk_energy, exp(-PK_ENERGY/RT), scale[h11 + h12 + h21 + h22], h11 + h12 + h21 + h22, scale[1]);
 								goto HELICES_CHOSEN;	/* move to selected helices */
 							}
 						}
@@ -493,12 +507,12 @@ void traceback_pks(	int	i,
 	/* traceback helices */
 	
 	//printf("(%d,%d,%d,%d) - (%d,%d,%d,%d)\n", i, j_prime, hx_H1->k, hx_H1->l, i_prime, j, hx_H2->k, hx_H2->l);
-	traceback_helix(i,j_prime, hx_H1, pstruc, 1);
-	traceback_helix(i_prime, j, hx_H2, pstruc, 2);
+	traceback_helix(i,j_prime, hx_H1, pstruc, 1, pk_energy);
+	traceback_helix(i_prime, j, hx_H2, pstruc, 2, pk_energy);
 	
 	/* traceback intermediate sectors */
-	traceback_interspace(hx_H1->k, i_prime, pstruc, fcom);
-	traceback_interspace(hx_H2->k, hx_H1->l, pstruc, fcom);
-	traceback_interspace(j_prime, hx_H2->l, pstruc, fcom);
+	traceback_interspace(hx_H1->k, i_prime, pstruc, fcom, pk_energy);
+	traceback_interspace(hx_H2->k, hx_H1->l, pstruc, fcom, pk_energy);
+	traceback_interspace(j_prime, hx_H2->l, pstruc, fcom, pk_energy);
 }
 
